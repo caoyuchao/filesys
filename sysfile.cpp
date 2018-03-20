@@ -272,6 +272,7 @@ int openf(const char* path,unsigned short o_mode)
     item.use_count=1;
     item.valid=1;
     file_table.push_back(item);
+    //std::cout<<"file_table size "<<file_table.size()<<std::endl;
     return file_table.size()-1;
 }
 unsigned int readf(int fd,void* buf,unsigned int count)
@@ -280,7 +281,7 @@ unsigned int readf(int fd,void* buf,unsigned int count)
         return 0;
     if(file_table[fd].valid&&file_table[fd].use_count&&(file_table[fd].o_mode&O_READ))
     {
-        std::cout<<"permmit read..."<<std::endl;
+        //std::cout<<"permmit read..."<<std::endl;
         int i_num=file_table[fd].i_num;
         i_node node;
         fseek(disk,GetINodeOffSet(i_num),SEEK_SET);
@@ -288,7 +289,7 @@ unsigned int readf(int fd,void* buf,unsigned int count)
         if(count>node.i_length)
             count=node.i_length;
         
-        std::cout<<"count "<<count<<std::endl;
+        //std::cout<<"count "<<count<<std::endl;
         int i_bound=count/BLOCK_SIZE;
         int i_bound_remain=count%BLOCK_SIZE;
         int i_more_bound=0;
@@ -326,7 +327,7 @@ unsigned int readf(int fd,void* buf,unsigned int count)
         }
         if(!flag&&i_bound_remain)
         {
-            std::cout<<node.i_addr[i_bound]<<std::endl;
+            //std::cout<<node.i_addr[i_bound]<<std::endl;
             fseek(disk,GetDBlcokOffSet(node.i_addr[i_bound]),SEEK_SET);
             fread(buffer,sizeof(char),BLOCK_SIZE,disk);
             copybuf((char*)buf+i_bound*BLOCK_SIZE,buffer,i_bound_remain);
@@ -339,6 +340,7 @@ unsigned int writef(int fd,const void* buf,unsigned int count)
 {
     if(fd>=file_table.size())
         return 0;
+    std::cout<<fd<<std::endl;
     if(file_table[fd].valid&&file_table[fd].use_count&&(file_table[fd].o_mode&O_WRITE))
     {
         std::cout<<"permmit..."<<std::endl;
@@ -347,7 +349,7 @@ unsigned int writef(int fd,const void* buf,unsigned int count)
         i_node node;
         fseek(disk,GetINodeOffSet(i_num),SEEK_SET);
         fread(&node,sizeof(node),1,disk);
-        
+        std::cout<<"node i_length "<<node.i_length<<std::endl;  
         int i_bound=count/BLOCK_SIZE;
         int i_bound_remain=count%BLOCK_SIZE;
         int i_more_bound=0;
@@ -436,17 +438,18 @@ unsigned int writef(int fd,const void* buf,unsigned int count)
             }
         }
         int dblock_num=get_free_block();
-        std::cout<<"dblock num "<<dblock_num<<std::endl;
+        //std::cout<<"dblock num "<<dblock_num<<std::endl;
 
         if(!flag&&dblock_num&&i_bound_remain)
         {
             setdbitmap(dblock_num,1);
             node.i_addr[i_bound]=dblock_num;
             fseek(disk,GetDBlcokOffSet(dblock_num),SEEK_SET);
+            std::cout<<"debug "<<(char*)buf+i_bound*BLOCK_SIZE<<std::endl;
             fwrite((char*)buf+i_bound*BLOCK_SIZE,sizeof(char),i_bound_remain,disk);
             fflush(disk);
             node.i_length+=i_bound_remain;
-            std::cout<<"file length "<<node.i_length<<std::endl;
+            //std::cout<<"file length "<<node.i_length<<std::endl;
         }
         fseek(disk,GetINodeOffSet(i_num),SEEK_SET);
         fwrite(&node,sizeof(node),1,disk);
@@ -628,12 +631,19 @@ int create(const char* path,unsigned short i_type)
     int pos=cur_path.find_last_of('/');
     std::cout<<path<<std::endl;
     if(pos==std::string::npos)
+    {
+        if(cur_path==".."||cur_path=="."||cur_path=="/")
+            return -1;
         return sys_create(cur_inum,path,i_type);
+    }
     i_num=find_inode(cur_path.substr(0,pos+1).c_str());
     std::cout<<"path fater inode "<<i_num<<std::endl;
     if(i_num==0)
         return -1;
-    std::cout<<"filename "<<cur_path.substr(pos+1,cur_path.size()).c_str()<<std::endl;
+    std::string cur_filename=cur_path.substr(pos+1,cur_path.size()).c_str();
+    std::cout<<"filename "<<cur_filename<<std::endl;
+    if(cur_filename==".."||cur_filename=="."||cur_filename=="/")
+        return -1;
     return sys_create(i_num,cur_path.substr(pos+1,cur_path.size()).c_str(),i_type);
 }
 
@@ -899,13 +909,21 @@ std::vector<std::string> lsdir(unsigned short i_num)
     int i_bound=node.i_length/BLOCK_SIZE;
     int i_bound_remain=(node.i_length%BLOCK_SIZE)/sizeof(directory);
     directory direcArr[BLOCK_SIZE/sizeof(directory)];
+    i_node tmpnode;
     for(int i=0;i<i_bound;i++)
     {
         fseek(disk,GetDBlcokOffSet(node.i_addr[i]),SEEK_SET);
         fread(direcArr,sizeof(directory),BLOCK_SIZE/sizeof(directory),disk);
         for(int j=0;j<BLOCK_SIZE/sizeof(directory);j++)
         {
-            list.push_back(direcArr[j].file_name);
+            fseek(disk,GetINodeOffSet(direcArr[j].i_num),SEEK_SET);
+            fread(&tmpnode,sizeof(tmpnode),1,disk);
+            std::string tmp=direcArr[j].file_name;
+            if(tmpnode.i_type==DIREC)
+            {
+                tmp.push_back('/');
+            }
+            list.push_back(tmp);
         }
     }
     if(i_bound_remain)
@@ -914,7 +932,14 @@ std::vector<std::string> lsdir(unsigned short i_num)
         fread(direcArr,sizeof(directory),BLOCK_SIZE/sizeof(directory),disk);
         for(int i=0;i<i_bound_remain;i++)
         {
-            list.push_back(direcArr[i].file_name);
+            fseek(disk,GetINodeOffSet(direcArr[i].i_num),SEEK_SET);
+            fread(&tmpnode,sizeof(tmpnode),1,disk);
+            std::string tmp=direcArr[i].file_name;
+            if(tmpnode.i_type==DIREC)
+            {
+                tmp.push_back('/');
+            }
+            list.push_back(tmp);
         }
     }
     return list;

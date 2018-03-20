@@ -79,16 +79,16 @@ int main()
 
         if(cmd=="ls")
         {
-            if(arg[arg.size()-1]=='/')
-            {
-                arg=arg.substr(0,arg.size()-1);
-            }
-            //std::cout<<"arg "<<arg<<" "<<arg.size()<<std::endl;
             if(arg=="")
             {
                 arg=current_path;
                 //std::cout<<current_path<<" "<<current_path.size()<<std::endl;
             }
+            else if(arg[arg.size()-1]=='/')
+            {
+                arg=arg.substr(0,arg.size()-1);
+            }
+            //std::cout<<"arg "<<arg<<" "<<arg.size()<<std::endl;
             int i_num=find_inode(arg.c_str());
             if(i_num)
             {
@@ -113,6 +113,12 @@ int main()
         }
         else if(cmd=="cd")
         {
+            if(arg=="")
+            {
+                current_path="/";
+                cur_inum=2;
+                continue;
+            }
             if(arg[arg.size()-1]=='/')
             {
                 arg=arg.substr(0,arg.size()-1);
@@ -133,29 +139,116 @@ int main()
         }
         else if(cmd=="mkdir")
         {
-            std::cout<<"mkdir "<<arg<<std::endl;
-
+            if(arg=="")
+            {
+                std::cout<<"should mkdir something"<<std::endl;
+            }
+            else if(arg[arg.size()-1]=='/')
+            {
+                arg=arg.substr(0,arg.size()-1);
+            }
+            else if(mkdir(arg.c_str()))
+            {
+                std::cout<<"check your path & dirname"<<std::endl;
+            }
         }
         else if(cmd=="touch")
         {
-            std::cout<<"touch "<<arg<<std::endl;
-
-        }
-        else if(cmd=="echo")
-        {
-            std::cout<<"write "<<arg<<std::endl;
-
-        }
-        else if(cmd=="cat")
-        {
-            std::cout<<"read "<<arg<<std::endl;
+            if(arg=="")
+            {
+                std::cout<<"should touch somthing"<<std::endl;
+            }
+            else if(arg[arg.size()-1]=='/')
+            {
+                std::cout<<"need a filename"<<std::endl;
+            }
+            else if(touch(arg.c_str()))
+            {
+                std::cout<<"check your path & filename"<<std::endl;
+            }
 
         }
         else if(cmd=="rm")
         {
-            std::cout<<"remove "<<arg<<std::endl;
+            if(arg=="")
+            {
 
-        
+            }
+            else if(arg[arg.size()-1]=='/')
+            {
+                arg=arg.substr(0,arg.size()-1);
+            }
+            else
+            {
+                if(remove(arg.c_str())==-1)
+                {
+                    std::cout<<"check your path & filename"<<std::endl;
+                }
+            }
+            std::cout<<"remove "<<arg<<std::endl; 
+        }
+        else if(cmd=="echo")
+        {
+            if(arg=="")
+            {
+                std::cout<<"should echo something"<<std::endl;
+            }
+            else if(arg[arg.size()-1]=='/')
+            {
+                std::cout<<"need a filename"<<std::endl;
+            }
+            else
+            {
+                std::string buf=arg.substr(arg.find_first_of('"')+1,arg.find_last_of('"')-1);
+                arg=arg.substr(arg.find_last_of('"')+1);
+                trim(arg);
+                int fd;
+                if((fd=openf(arg.c_str(),O_WRITE))!=-1)
+                {
+                    std::cout<<"fd "<<fd<<std::endl;
+                    std::cout<<file_table.size()<<std::endl;
+                    std::cout<<file_table[0].i_num<<std::endl;
+                    if(writef(fd,buf.c_str(),buf.size())==0)
+                    {
+                        std::cout<<"no space"<<std::endl;
+                    }
+                    closef(fd);
+                }
+                else
+                {
+                    std::cout<<"check your path & filename"<<std::endl;
+                }
+            }
+        }
+        else if(cmd=="cat")
+        {
+            if(arg=="")
+            {
+                std::cout<<"should cat something"<<std::endl;
+            }
+            else if(arg[arg.size()-1]=='/')
+            {
+                std::cout<<"need a filename"<<std::endl;
+            }
+            else
+            {
+                char buf[BLOCK_SIZE*2];
+                memset(buf,0,sizeof(char)*BLOCK_SIZE*2);
+                int fd;
+                if((fd=openf(arg.c_str(),O_READ))!=-1)
+                {
+                    if(readf(fd,buf,BLOCK_SIZE*2)==0)
+                    {
+                        std::cout<<"nothing"<<std::endl;
+                    }
+                    std::cout<<buf<<std::endl;
+                    closef(fd);
+                }
+                else
+                {
+                    std::cout<<"check your path & filename"<<std::endl;
+                }
+            }
         }
         else if(cmd=="clear")
         {
