@@ -410,6 +410,18 @@ int main()
         {
             break;
         }
+        else if(cmd=="")
+        {
+
+        }
+        else if(cmd=="help")
+        {
+            std::cout<<"help   how to operate\n"<<"clear  clear screen\n"<<"exit   quit\n";
+            std::cout<<"ls     [path]\n"<<"ll     [path]\n"<<"cd     [path]\n"<<"touch  [path]filename\n";
+            std::cout<<"mkdir  [path]directory\n"<<"cat    [path]filename\n";
+            std::cout<<"echo   \"string\"           [path]filename\n"<<"rm     [path]directory or [path]filename\n";
+            std::cout<<"cp     [path]filename     [path]filename\n";
+        }
         else
         {
             std::cout<<"error"<<std::endl;
