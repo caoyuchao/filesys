@@ -12,6 +12,8 @@
 #include<unistd.h>
 #include<string.h>
 #include<string>
+#include<ctime>
+#include<iomanip>
 extern FILE* disk;
 extern super_block sublock;
 extern const char* diskname;
@@ -56,6 +58,23 @@ int is_rm_valid(const char* path)
     return 0;
 }
 
+
+void show_fileinfo(file_info info)
+{
+    std::string format_str;
+    format_str.push_back(info.i_type==DIREC?'d':'-');
+    format_str.push_back(info.i_mode&O_READ?'r':'-');
+    format_str.push_back(info.i_mode&O_WRITE?'w':'-');
+    format_str.push_back('-');
+
+    std::cout<<format_str;
+    std::cout<<" "<<std::left<<std::setw(6)<<info.i_length;
+    char buf[20];
+    strftime(buf,sizeof(buf),"%Y-%m-%d %H:%M:%S",localtime(&info.time));
+    std::cout<<" "<<std::right<<std::setw(22)<<buf;
+    std::cout<<" "<<info.file_name<<std::endl;
+}
+
 int main()
 {
     init();
@@ -67,7 +86,7 @@ int main()
         cmd="";
         arg="";
 
-        std::cout<<"\033[32m\033[1mcaoyuchao@cj\033[0m:"<<"\033[34m\033[1m"+current_path+"\033[0m"<<"$";
+        std::cout<<"\033[32m\033[1mcaoyuchao@cj\033[0m:"<<"\033[34m\033[1m"+current_path+"\033[0m"<<"$ ";
         std::getline(std::cin,cmd);
         trim(cmd);
         int pos;
@@ -259,6 +278,40 @@ int main()
                     std::cout<<"check your path & filename"<<std::endl;
                 }
             }
+        }
+        else if(cmd=="ll")
+        {
+            if(arg=="")
+            {
+                arg=current_path;
+                //std::cout<<current_path<<" "<<current_path.size()<<std::endl;
+            }
+            else if(arg[arg.size()-1]=='/')
+            {
+                arg=arg.substr(0,arg.size()-1);
+            }
+            //std::cout<<"arg "<<arg<<" "<<arg.size()<<std::endl;
+            int i_num=find_inode(arg.c_str());
+            if(i_num)
+            {
+                if(is_direc(i_num))
+                {
+                    std::vector<file_info> list=lldir(i_num);
+                    for(int i=0;i<list.size();i++)
+                    {
+                       show_fileinfo(list[i]);
+                    }
+                }
+                else
+                {
+                    std::cout<<"need a directory"<<std::endl;
+                }
+            }
+            else
+            {
+                std::cout<<"check your path"<<std::endl;
+            }
+
         }
         else if(cmd=="clear")
         {

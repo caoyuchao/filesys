@@ -984,3 +984,106 @@ int is_docum(unsigned short i_num)
     return node.i_type==DOCUM;
 }
 
+
+std::vector<file_info> lldir(unsigned short i_num)
+{
+    i_node node;
+    fseek(disk,GetINodeOffSet(i_num),SEEK_SET);
+    fread(&node,sizeof(node),1,disk);
+    std::vector<file_info> list;
+    int i_bound=node.i_length/BLOCK_SIZE;
+    int i_bound_remain=(node.i_length%BLOCK_SIZE)/sizeof(directory);
+    directory direcArr[BLOCK_SIZE/sizeof(directory)];
+    i_node tmpnode;
+    for(int i=0;i<i_bound;i++)
+    {
+        fseek(disk,GetDBlcokOffSet(node.i_addr[i]),SEEK_SET);
+        fread(direcArr,sizeof(directory),BLOCK_SIZE/sizeof(directory),disk);
+        for(int j=0;j<BLOCK_SIZE/sizeof(directory);j++)
+        {
+            fseek(disk,GetINodeOffSet(direcArr[j].i_num),SEEK_SET);
+            fread(&tmpnode,sizeof(tmpnode),1,disk);
+            if(strcmp(direcArr[j].file_name,"..")==0)
+                continue;
+            std::string tmp=direcArr[j].file_name;
+            file_info info;
+            memset(info.file_name,0,30);
+            strncpy(info.file_name,tmp.c_str(),tmp.size());
+            info.i_type=tmpnode.i_type;
+            info.i_mode=tmpnode.i_mode;
+            info.i_length=get_length(direcArr[j].i_num);
+            info.i_num=direcArr[j].i_num;
+            info.time=tmpnode.time;
+
+            list.push_back(info);
+        }
+    }
+    if(i_bound_remain)
+    {
+        fseek(disk,GetDBlcokOffSet(node.i_addr[i_bound]),SEEK_SET);
+        fread(direcArr,sizeof(directory),BLOCK_SIZE/sizeof(directory),disk);
+        for(int i=0;i<i_bound_remain;i++)
+        {
+            fseek(disk,GetINodeOffSet(direcArr[i].i_num),SEEK_SET);
+            fread(&tmpnode,sizeof(tmpnode),1,disk);
+            if(strcmp(direcArr[i].file_name,"..")==0)
+                continue;
+            std::string tmp=direcArr[i].file_name;
+            file_info info;
+            memset(info.file_name,0,30);
+            strncpy(info.file_name,tmp.c_str(),tmp.size());
+            info.i_type=tmpnode.i_type;
+            info.i_mode=tmpnode.i_mode;
+            info.i_length=get_length(direcArr[i].i_num);
+            info.i_num=direcArr[i].i_num;
+            info.time=tmpnode.time;
+
+            list.push_back(info);
+        }
+    }
+    return list;
+}
+
+unsigned int get_length(unsigned short i_num)
+{
+    i_node node;
+    fseek(disk,GetINodeOffSet(i_num),SEEK_SET);
+    fread(&node,sizeof(node),1,disk);
+
+    if(node.i_type==DOCUM)
+    {
+        return node.i_length;
+    }
+    else if(node.i_type==DIREC)
+    {
+        unsigned short length=0;
+        int i_bound=node.i_length/BLOCK_SIZE;
+        int i_bound_remain=(node.i_length%BLOCK_SIZE)/sizeof(directory);
+        directory direcArr[BLOCK_SIZE/sizeof(directory)];
+        i_node tmpnode;
+        for(int i=0;i<i_bound;i++)
+        {
+            fseek(disk,GetDBlcokOffSet(node.i_addr[i]),SEEK_SET);
+            fread(direcArr,sizeof(directory),BLOCK_SIZE/sizeof(directory),disk);
+            for(int j=0;j<BLOCK_SIZE/sizeof(directory);j++)
+            {
+                if(strcmp(direcArr[j].file_name,"..")==0)
+                    continue;
+                length+=get_length(direcArr[j].i_num);
+            }
+        }
+        if(i_bound_remain)
+        {
+            fseek(disk,GetDBlcokOffSet(node.i_addr[i_bound]),SEEK_SET);
+            fread(direcArr,sizeof(directory),BLOCK_SIZE/sizeof(directory),disk);
+            for(int i=0;i<i_bound_remain;i++)
+            {
+                if(strcmp(direcArr[i].file_name,"..")==0)
+                    continue;
+                length+=get_length(direcArr[i].i_num);
+            } 
+        }
+        return length;
+    }
+    return 0;
+}

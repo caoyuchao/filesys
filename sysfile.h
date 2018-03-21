@@ -52,6 +52,17 @@ struct i_node
     char bubble[24];
 };
 
+struct file_info
+{
+    unsigned short i_type;
+    unsigned short i_mode;
+    unsigned int i_length;
+    time_t time;
+    unsigned short i_num;
+    char file_name[30];
+};
+
+
 struct file_item
 {
   unsigned short o_mode;
@@ -95,3 +106,5 @@ std::string parse_path(std::string path,std::string str_format);
 std::vector<std::string> lsdir(unsigned short i_num);
 int is_direc(unsigned short i_num);
 int is_docum(unsigned short i_num);
+std::vector<file_info> lldir(unsigned short i_num);
+unsigned int get_length(unsigned short i_num);
