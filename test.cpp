@@ -72,7 +72,10 @@ void show_fileinfo(file_info info)
     char buf[20];
     strftime(buf,sizeof(buf),"%Y-%m-%d %H:%M:%S",localtime(&info.time));
     std::cout<<" "<<std::right<<std::setw(22)<<buf;
-    std::cout<<" "<<info.file_name<<std::endl;
+    if(info.i_type==DIREC)
+        std::cout<<" "<<"\033[34m\033[1m"<<info.file_name<<"\033[0m"<<std::endl;
+    else
+        std::cout<<" "<<info.file_name<<std::endl;
 }
 
 int main()
@@ -195,6 +198,92 @@ int main()
             }
 
         }
+        else if(cmd=="cp")
+        {
+            trim(arg);
+            if(arg=="")
+            {
+                
+            }
+            else
+            {
+                int pos=arg.find_first_of(' ');
+                if(pos==std::string::npos)
+                {
+                    std::cout<<"too few arguments"<<std::endl;
+                }
+                else
+                {
+                    std::string arg1=arg.substr(0,pos);
+                    std::string arg2=arg.substr(pos+1,arg.size());
+                    trim(arg1);
+                    trim(arg2);
+                    if(arg1==""||arg1[arg1.size()-1]=='/')
+                    {
+                        std::cout<<"check your path & filename"<<std::endl;
+                    }
+                    else if(arg2==""||arg2[arg2.size()-1]=='/')
+                    {
+                        std::cout<<"check your path & filename"<<std::endl;
+                    }
+                    else
+                    {
+                        //std::cout<<arg1<<std::endl;
+                        //std::cout<<arg2<<std::endl;
+                        int fd1;
+                        if((fd1=openf(arg1.c_str(),O_READ))!=-1)
+                        {
+                            int fd2;
+                            if((fd2=openf(arg2.c_str(),O_WRITE))!=-1)
+                            {
+                                char buf[BLOCK_SIZE];
+                                memset(buf,0,BLOCK_SIZE);
+                                readf(fd1,buf,BLOCK_SIZE);
+                                //std::cout<<buf<<std::endl;
+                                //std::cout<<fd2<<std::endl;
+                                if(writef(fd2,buf,strlen(buf))==0)
+                                {
+                                    std::cout<<"no space"<<std::endl;
+                                }
+                                closef(fd2);
+                            }
+                            else
+                            {
+                                if(touch(arg2.c_str()))
+                                {
+                                    std::cout<<"can not touch "<<arg2<<std::endl;
+                                }
+                                else
+                                {
+                                    if((fd2=openf(arg2.c_str(),O_WRITE))!=-1)
+                                    {
+                                        char buf[BLOCK_SIZE];
+                                        memset(buf,0,BLOCK_SIZE);
+                                        readf(fd1,buf,BLOCK_SIZE);
+                                        //std::cout<<buf<<std::endl;
+                                        if(writef(fd2,buf,strlen(buf))==0)
+                                        {
+                                            std::cout<<"no space"<<std::endl;
+                                        }
+                                        closef(fd2);
+                                    }
+                                    else
+                                    {
+                                        std::cout<<"can not open "<<arg2.size()<<std::endl;
+                                    }
+                                }
+                            }
+                            closef(fd1);
+                        }
+                        else
+                        {
+                            std::cout<<"can not open "<<arg1<<std::endl;
+                        }
+                    }
+
+                }
+            }
+        }
         else if(cmd=="rm")
         {
             if(arg=="")
@@ -265,7 +354,7 @@ int main()
                 {
                     if(readf(fd,buf,BLOCK_SIZE*2)==0)
                     {
-                        std::cout<<"nothing"<<std::endl;
+                       std::cout<<"nothing"<<std::endl;
                     }
                     else
                     {

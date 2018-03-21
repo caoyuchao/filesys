@@ -359,6 +359,9 @@ unsigned int writef(int fd,const void* buf,unsigned int count)
         int i_bound=count/BLOCK_SIZE;
         int i_bound_remain=count%BLOCK_SIZE;
         int i_more_bound=0;
+        //std::cout<<"i_bound"<<i_bound<<std::endl;
+        //std::cout<<"i_bound_remain"<<i_bound_remain<<std::endl;
+        //std::cout<<"i_more_bound"<<i_more_bound<<std::endl;
         if(i_bound>7)
         {
             i_more_bound=i_bound-7;
