@@ -66,7 +66,8 @@ int main()
     {
         cmd="";
         arg="";
-        std::cout<<current_path<<"$";
+
+        std::cout<<"\033[32m\033[1mcaoyuchao@cj\033[0m:"<<"\033[34m\033[1m"+current_path+"\033[0m"<<"$";
         std::getline(std::cin,cmd);
         trim(cmd);
         int pos;
@@ -127,9 +128,16 @@ int main()
             //std::cout<<"cur_inum "<<i_num<<std::endl;
             if(i_num)
             {
-                //std::cout<<current_path<<" "<<arg<<std::endl;
-                current_path=parse_path(current_path,arg);
-                cur_inum=i_num;
+                if(is_direc(i_num))
+                {
+                    //std::cout<<current_path<<" "<<arg<<std::endl;
+                    current_path=parse_path(current_path,arg);
+                    cur_inum=i_num;
+                }
+                else
+                {
+                    std::cout<<"need a directory"<<std::endl;
+                }
             }
             else
             {
@@ -185,7 +193,6 @@ int main()
                     std::cout<<"check your path & filename"<<std::endl;
                 }
             }
-            std::cout<<"remove "<<arg<<std::endl; 
         }
         else if(cmd=="echo")
         {
@@ -205,9 +212,9 @@ int main()
                 int fd;
                 if((fd=openf(arg.c_str(),O_WRITE))!=-1)
                 {
-                    std::cout<<"fd "<<fd<<std::endl;
-                    std::cout<<file_table.size()<<std::endl;
-                    std::cout<<file_table[0].i_num<<std::endl;
+                    //std::cout<<"fd "<<fd<<std::endl;
+                    //std::cout<<file_table.size()<<std::endl;
+                    //std::cout<<file_table[0].i_num<<std::endl;
                     if(writef(fd,buf.c_str(),buf.size())==0)
                     {
                         std::cout<<"no space"<<std::endl;
@@ -241,7 +248,10 @@ int main()
                     {
                         std::cout<<"nothing"<<std::endl;
                     }
-                    std::cout<<buf<<std::endl;
+                    else
+                    {
+                        std::cout<<buf<<std::endl;
+                    }
                     closef(fd);
                 }
                 else

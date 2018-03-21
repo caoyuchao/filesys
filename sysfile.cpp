@@ -201,6 +201,8 @@ unsigned short find_inode_bypath(const char* cur_path,unsigned short i_num)
     //    std::cout<<"from.   "<<cur_filename<<"  "<<newpath<<std::endl;
         return find_inode_bypath(newpath.c_str(),i_num);
     }
+    //std::cout<<"i_bound"<<i_bound<<std::endl;
+    //std::cout<<"i_bound_remain"<<i_bound_remain<<std::endl;
     for(int i=0;i<i_bound;i++)
     {
         fseek(disk,GetDBlcokOffSet(node.i_addr[i]),SEEK_SET);
@@ -279,6 +281,10 @@ unsigned int readf(int fd,void* buf,unsigned int count)
 {
     if(fd>=file_table.size())
         return 0;
+    if(!is_docum(file_table[fd].i_num))
+    {
+        return 0;
+    }
     if(file_table[fd].valid&&file_table[fd].use_count&&(file_table[fd].o_mode&O_READ))
     {
         //std::cout<<"permmit read..."<<std::endl;
@@ -340,16 +346,16 @@ unsigned int writef(int fd,const void* buf,unsigned int count)
 {
     if(fd>=file_table.size())
         return 0;
-    std::cout<<fd<<std::endl;
+    //std::cout<<fd<<std::endl;
     if(file_table[fd].valid&&file_table[fd].use_count&&(file_table[fd].o_mode&O_WRITE))
     {
-        std::cout<<"permmit..."<<std::endl;
+        //std::cout<<"permmit..."<<std::endl;
         unsigned short i_num=file_table[fd].i_num;
         clear_dblock(i_num);
         i_node node;
         fseek(disk,GetINodeOffSet(i_num),SEEK_SET);
         fread(&node,sizeof(node),1,disk);
-        std::cout<<"node i_length "<<node.i_length<<std::endl;  
+        //std::cout<<"node i_length "<<node.i_length<<std::endl;  
         int i_bound=count/BLOCK_SIZE;
         int i_bound_remain=count%BLOCK_SIZE;
         int i_more_bound=0;
@@ -445,7 +451,7 @@ unsigned int writef(int fd,const void* buf,unsigned int count)
             setdbitmap(dblock_num,1);
             node.i_addr[i_bound]=dblock_num;
             fseek(disk,GetDBlcokOffSet(dblock_num),SEEK_SET);
-            std::cout<<"debug "<<(char*)buf+i_bound*BLOCK_SIZE<<std::endl;
+            //std::cout<<"debug "<<(char*)buf+i_bound*BLOCK_SIZE<<std::endl;
             fwrite((char*)buf+i_bound*BLOCK_SIZE,sizeof(char),i_bound_remain,disk);
             fflush(disk);
             node.i_length+=i_bound_remain;
@@ -498,7 +504,7 @@ int sys_create(unsigned short i_num,const char* filename,unsigned short i_type)
         return -1;
     }
     setibitmap(new_i_num,1);
-    std::cout<<"use i_num "<<new_i_num<<std::endl;
+    //std::cout<<"use i_num "<<new_i_num<<std::endl;
     i_node node;
     node.use_count=1;
     node.i_type=i_type;
@@ -510,14 +516,14 @@ int sys_create(unsigned short i_num,const char* filename,unsigned short i_type)
         if(dblock_num)
         {
             tmp2=dblock_num;
-            std::cout<<"dir block "<<dblock_num<<std::endl;
+            //std::cout<<"dir block "<<dblock_num<<std::endl;
             setdbitmap(dblock_num,1);
             node.i_addr[0]=dblock_num;
             
             directory direc;
             strcpy(direc.file_name,"..");
             direc.i_num=i_num;
-            std::cout<<"its father i_num "<<i_num<<std::endl;
+            //std::cout<<"its father i_num "<<i_num<<std::endl;
 
             fseek(disk,GetDBlcokOffSet(dblock_num),SEEK_SET);
             fwrite(&direc,sizeof(direc),1,disk);
@@ -550,11 +556,11 @@ int sys_create(unsigned short i_num,const char* filename,unsigned short i_type)
     direc.file_name[29]='\0';
     direc.i_num=new_i_num;
     
-    std::cout<<"filename "<<direc.file_name<<std::endl;
+    //std::cout<<"filename "<<direc.file_name<<std::endl;
     directory direcArr[BLOCK_SIZE/sizeof(directory)];
     int i_bound=p_node.i_length/sizeof(directory);
     int dir_count=BLOCK_SIZE/sizeof(directory);
-    std::cout<<"i_bound "<<i_bound<<std::endl; 
+    //std::cout<<"i_bound "<<i_bound<<std::endl; 
     if(i_bound>=dir_count)
     {
 
@@ -600,11 +606,11 @@ int sys_create(unsigned short i_num,const char* filename,unsigned short i_type)
         {
             if(strcmp(direcArr[i].file_name,filename)==0)
             {
-                std::cout<<"the same name "<<filename<<std::endl;
+                //std::cout<<"the same name "<<filename<<std::endl;
                 setibitmap(new_i_num,0);
                 if(tmp)setdbitmap(tmp,0);
                 if(tmp2)setdbitmap(tmp2,0);
-                std::cout<<"tmp2 "<<tmp2<<std::endl;
+                //std::cout<<"tmp2 "<<tmp2<<std::endl;
                 return -1;
             }
         }
@@ -616,7 +622,7 @@ int sys_create(unsigned short i_num,const char* filename,unsigned short i_type)
     }
     p_node.i_length+=sizeof(directory);
 
-    std::cout<<"fater length "<<p_node.i_length<<std::endl;
+    //std::cout<<"fater length "<<p_node.i_length<<std::endl;
 
     fseek(disk,GetINodeOffSet(i_num),SEEK_SET);
     fwrite(&p_node,sizeof(p_node),1,disk);
@@ -629,7 +635,7 @@ int create(const char* path,unsigned short i_type)
     std::string cur_path=path;
     unsigned short i_num;
     int pos=cur_path.find_last_of('/');
-    std::cout<<path<<std::endl;
+    //std::cout<<path<<std::endl;
     if(pos==std::string::npos)
     {
         if(cur_path==".."||cur_path=="."||cur_path=="/")
@@ -637,11 +643,11 @@ int create(const char* path,unsigned short i_type)
         return sys_create(cur_inum,path,i_type);
     }
     i_num=find_inode(cur_path.substr(0,pos+1).c_str());
-    std::cout<<"path fater inode "<<i_num<<std::endl;
+    //std::cout<<"path fater inode "<<i_num<<std::endl;
     if(i_num==0)
         return -1;
     std::string cur_filename=cur_path.substr(pos+1,cur_path.size()).c_str();
-    std::cout<<"filename "<<cur_filename<<std::endl;
+    //std::cout<<"filename "<<cur_filename<<std::endl;
     if(cur_filename==".."||cur_filename=="."||cur_filename=="/")
         return -1;
     return sys_create(i_num,cur_path.substr(pos+1,cur_path.size()).c_str(),i_type);
@@ -724,10 +730,27 @@ int remove(const char* path)
     i_num=find_inode(path);
     if(i_num==0)
         return -1;
+    //std::cout<<"remove i_num"<<i_num<<std::endl;
+    unsigned short p_i_num;
+    std::string cur_path=path;
+    int pos=cur_path.find_last_of('/');
+    if(pos==std::string::npos)
+    {
+        if(cur_path==".."||cur_path=="."||cur_path=="/")
+            return -1;
+        p_i_num=cur_inum;
+        //std::cout<<"p_i_num "<<p_i_num<<std::endl;
+    }
+    else
+    {
+        p_i_num=find_inode(cur_path.substr(0,pos+1).c_str());
+        //std::cout<<"p_i_num "<<p_i_num<<std::endl;
+    }
+    if(p_i_num==0)
+        return -1;
     int state=sys_remove(i_num);
     if(state==-1)
         return -1;
-    unsigned short p_i_num=find_inode_bypath("..",i_num);
     state=p_remove_c(p_i_num,i_num);
     return state;
 }
@@ -876,7 +899,7 @@ std::string parse_path(std::string path,std::string str_format)
             int format_pos=str_format.find_first_of('/');
             std::string cur_filename=str_format.substr(0,format_pos);
             std::string tmppath=parse_path(path,cur_filename);
-            std::cout<<tmppath<<std::endl;
+            //std::cout<<tmppath<<std::endl;
             return parse_path(tmppath,str_format.substr(format_pos+1,str_format.size()));
         }
     }
