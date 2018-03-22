@@ -25,7 +25,7 @@
 #define O_READ 0x1
 #define O_WRITE 0x2
 #define O_RD_WR (O_READ|O_WRITE)
-
+#define SIZE 135
 
 
 struct load_block

@@ -360,6 +360,8 @@ unsigned int writef(int fd,const void* buf,unsigned int count)
         i_node node;
         fseek(disk,GetINodeOffSet(i_num),SEEK_SET);
         fread(&node,sizeof(node),1,disk);
+        if(count>BLOCK_SIZE*SIZE)
+            count=BLOCK_SIZE*SIZE;
         //std::cout<<"node i_length "<<node.i_length<<std::endl;  
         int i_bound=count/BLOCK_SIZE;
         int i_bound_remain=count%BLOCK_SIZE;

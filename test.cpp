@@ -238,9 +238,9 @@ int main()
                             int fd2;
                             if((fd2=openf(arg2.c_str(),O_WRITE))!=-1)
                             {
-                                char buf[BLOCK_SIZE*20];
-                                memset(buf,0,BLOCK_SIZE*20);
-                                readf(fd1,buf,BLOCK_SIZE*20);
+                                char buf[BLOCK_SIZE*SIZE];
+                                memset(buf,0,BLOCK_SIZE*SIZE);
+                                readf(fd1,buf,BLOCK_SIZE*SIZE);
                                 //std::cout<<buf<<std::endl;
                                 //std::cout<<fd2<<std::endl;
                                 if(writef(fd2,buf,strlen(buf))==0)
@@ -259,9 +259,9 @@ int main()
                                 {
                                     if((fd2=openf(arg2.c_str(),O_WRITE))!=-1)
                                     {
-                                        char buf[BLOCK_SIZE*20];
-                                        memset(buf,0,BLOCK_SIZE*20);
-                                        readf(fd1,buf,BLOCK_SIZE*20);
+                                        char buf[BLOCK_SIZE*SIZE];
+                                        memset(buf,0,BLOCK_SIZE*SIZE);
+                                        readf(fd1,buf,BLOCK_SIZE*SIZE);
                                         //std::cout<<buf<<std::endl;
                                         if(writef(fd2,buf,strlen(buf))==0)
                                         {
@@ -340,6 +340,47 @@ int main()
                 }
             }
         }
+        else if(cmd=="append")
+        {
+            if(arg=="")
+            {
+                std::cout<<"should append something"<<std::endl;
+            }
+            else if(arg[arg.size()-1]=='/')
+            {
+                std::cout<<"need a filename"<<std::endl;
+            }
+            else
+            {
+                std::string buf=arg.substr(arg.find_first_of('"')+1,arg.find_last_of('"')-1);
+                //std::cout<<"buf size "<<buf.size()<<std::endl;
+                //std::cout<<"buf"<<buf<<std::endl;
+                arg=arg.substr(arg.find_last_of('"')+1);
+                trim(arg);
+                int fd;
+                //std::cout<<"filename "<<arg<<std::endl;
+                if((fd=openf(arg.c_str(),O_RD_WR))!=-1)
+                {
+                    //std::cout<<"fd "<<fd<<std::endl;
+                    //std::cout<<file_table.size()<<std::endl;
+                    //std::cout<<file_table[0].i_num<<std::endl;
+                    char buffer[BLOCK_SIZE*SIZE];
+                    memset(buffer,0,sizeof(char)*BLOCK_SIZE*SIZE);
+                    readf(fd,buffer,BLOCK_SIZE*SIZE);
+                    buf=buffer+buf;
+                    if(writef(fd,buf.c_str(),buf.size())==0)
+                    {
+                        std::cout<<"no space"<<std::endl;
+                    }
+                    closef(fd);
+                }
+                else
+                {
+                    std::cout<<"check your path & filename"<<std::endl;
+                }
+            }
+
+        }
         else if(cmd=="cat")
         {
             if(arg=="")
@@ -352,12 +393,12 @@ int main()
             }
             else
             {
-                char buf[BLOCK_SIZE*20];
-                memset(buf,0,sizeof(char)*BLOCK_SIZE*20);
+                char buf[BLOCK_SIZE*SIZE];
+                memset(buf,0,sizeof(char)*BLOCK_SIZE*SIZE);
                 int fd;
                 if((fd=openf(arg.c_str(),O_READ))!=-1)
                 {
-                    if(readf(fd,buf,BLOCK_SIZE*20)==0)
+                    if(readf(fd,buf,BLOCK_SIZE*SIZE)==0)
                     {
                        std::cout<<"nothing"<<std::endl;
                     }
@@ -421,15 +462,15 @@ int main()
         }
         else if(cmd=="help")
         {
-            std::cout<<"help   how to operate\n"<<"clear  clear screen\n"<<"exit   quit\n";
-            std::cout<<"ls     [path]\n"<<"ll     [path]\n"<<"cd     [path]\n"<<"touch  [path]filename\n";
-            std::cout<<"mkdir  [path]directory\n"<<"cat    [path]filename\n";
-            std::cout<<"echo   \"string\"           [path]filename\n"<<"rm     [path]directory or [path]filename\n";
-            std::cout<<"cp     [path]filename     [path]filename\n";
+            std::cout<<"help    how to operate\n"<<"clear   clear screen\n"<<"exit    quit\n";
+            std::cout<<"ls      [path]\n"<<"ll      [path]\n"<<"cd      [path]\n"<<"touch   [path]filename\n";
+            std::cout<<"mkdir   [path]directory\n"<<"cat     [path]filename\n";
+            std::cout<<"echo    \"string\"           [path]filename\n"<<"rm      [path]directory or [path]filename\n";
+            std::cout<<"cp      [path]filename     [path]filename\n"<<"append  \"string\"    [path]filename\n";
         }
         else
         {
-            std::cout<<"error"<<std::endl;
+            std::cout<<"can not find the command"<<std::endl;
 
         }
     }
