@@ -5,7 +5,6 @@
 	=> Created Time: 2018年03月17日 星期六 13时33分24秒
 ----------------------------------------------------------------------*/
 
-//#include<iostream>
 #include<stdio.h>
 #include"sysfile.h"
 #include<string.h>
@@ -877,7 +876,7 @@ void clear_dblock(unsigned short i_num)
 //tmp=parse_path("/file/hello/world",".././../hello/world/like");
 std::string parse_path(std::string path,std::string str_format)
 {
-    if(str_format.find_first_of('/')==std::string::npos)//.. or . should be processed before call this function.    ..->../ .->./
+    if(str_format.find_first_of('/')==std::string::npos)
     {
         if(str_format=="..")
         {

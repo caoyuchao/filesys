@@ -54,7 +54,7 @@ std::string& trim(std::string& s)
 int is_rm_valid(const char* path)
 {
     std::string real_path=parse_path(current_path,path);
-    if(real_path.find(current_path)<real_path.size())
+    if(current_path.find(real_path)<current_path.size())
         return -1;
     return 0;
 }
@@ -298,9 +298,16 @@ int main()
             }
             else
             {
-                if(remove(arg.c_str())==-1)
+                if(is_rm_valid(arg.c_str())!=-1)
                 {
-                    std::cout<<"check your path & filename"<<std::endl;
+                    if(remove(arg.c_str())==-1)
+                    {
+                        std::cout<<"check your path & filename"<<std::endl;
+                    }
+                }
+                else
+                {
+                    std::cout<<"you should go back first"<<std::endl;
                 }
             }
         }
