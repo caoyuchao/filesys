@@ -312,11 +312,12 @@ unsigned int readf(int fd,void* buf,unsigned int count)
             fread(buffer,sizeof(char),BLOCK_SIZE,disk);
             copybuf((char*)buf+i*BLOCK_SIZE,buffer,BLOCK_SIZE);
         }
+        //std::cout<<"reading "<<i_more_bound<<" "<<i_bound<<" "<<i_bound_remain<<std::endl;
         int flag=i_more_bound||(i_bound==7&&i_bound_remain);
         if(flag)
         {
             unsigned short dblocks[BLOCK_SIZE/sizeof(unsigned short)];
-            fseek(disk,GetINodeOffSet(node.i_addr[7]),SEEK_SET);
+            fseek(disk,GetDBlcokOffSet(node.i_addr[7]),SEEK_SET);
             fread(dblocks,sizeof(unsigned short),BLOCK_SIZE/sizeof(unsigned short),disk);
             for(int i=0;i<i_more_bound;i++)
             {
@@ -324,10 +325,14 @@ unsigned int readf(int fd,void* buf,unsigned int count)
                 fread(buffer,sizeof(char),BLOCK_SIZE,disk);
                 copybuf((char*)buf+(i+i_bound)*BLOCK_SIZE,buffer,BLOCK_SIZE);
             }
+            //std::cout<<"i_bound_remain "<<i_bound_remain<<std::endl;
+            //std::cout<<"node.iaddr[7] "<<node.i_addr[7]<<std::endl;
             if(i_bound_remain)
             {
                 fseek(disk,GetDBlcokOffSet(dblocks[i_more_bound]),SEEK_SET);
+                //std::cout<<"dblocks[0]"<<dblocks[i_more_bound]<<std::endl;
                 fread(buffer,sizeof(char),BLOCK_SIZE,disk);
+                //std::cout<<buffer<<std::endl;
                 copybuf((char*)buf+(i_more_bound+i_bound)*BLOCK_SIZE,buffer,i_bound_remain);
             }
         }
@@ -402,8 +407,10 @@ unsigned int writef(int fd,const void* buf,unsigned int count)
             else
             {
                 setdbitmap(db_addr8,1);
+                //std::cout<<"i_addr "<<db_addr8<<std::endl;
                 node.i_addr[7]=db_addr8;
             }
+
             for(int i=0;i<i_more_bound;i++)
             {
                 int dblock_num=get_free_block();
@@ -440,6 +447,12 @@ unsigned int writef(int fd,const void* buf,unsigned int count)
             {
                 setdbitmap(dblock_num,1);
                 dblocks[i_more_bound]=dblock_num;
+                //std::cout<<"writting db_num"<<dblock_num<<"i_more_bound "<<i_more_bound<<"db_addr8 "<<db_addr8<<std::endl;
+                fseek(disk,GetDBlcokOffSet(db_addr8),SEEK_SET);
+                fwrite(dblocks,sizeof(unsigned short),BLOCK_SIZE/sizeof(unsigned short),disk);
+                fflush(disk);
+                //std::cout<<" "<<i_bound_remain<<std::endl;
+                //std::cout<<(char*)buf+(i_bound+i_more_bound)*BLOCK_SIZE<<std::endl;
                 fseek(disk,GetDBlcokOffSet(dblock_num),SEEK_SET);
                 fwrite((char*)buf+(i_bound+i_more_bound)*BLOCK_SIZE,sizeof(char),i_bound_remain,disk);
                 fflush(disk);
@@ -463,6 +476,7 @@ unsigned int writef(int fd,const void* buf,unsigned int count)
         fseek(disk,GetINodeOffSet(i_num),SEEK_SET);
         fwrite(&node,sizeof(node),1,disk);
         fflush(disk);
+        //std::cout<<"i_length "<<node.i_length<<std::endl;
         return node.i_length;
     }
     return 0;
@@ -816,6 +830,7 @@ int sys_remove(unsigned short i_num)
 void clear_dblock(unsigned short i_num)
 {
         i_node node;
+        //std::cout<<"clear block "<<i_num<<std::endl;
         fseek(disk,GetINodeOffSet(i_num),SEEK_SET);
         fread(&node,sizeof(node),1,disk);
         int i_bound=node.i_length/BLOCK_SIZE;
@@ -834,7 +849,7 @@ void clear_dblock(unsigned short i_num)
         if(flag)
         {
             unsigned short dblocks[BLOCK_SIZE/sizeof(unsigned short)];
-            fseek(disk,GetINodeOffSet(node.i_addr[7]),SEEK_SET);
+            fseek(disk,GetDBlcokOffSet(node.i_addr[7]),SEEK_SET);
             fread(dblocks,sizeof(unsigned short),BLOCK_SIZE/sizeof(unsigned short),disk);
             for(int i=0;i<i_more_bound;i++)
             {
